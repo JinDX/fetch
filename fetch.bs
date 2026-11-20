@@ -7538,14 +7538,17 @@ fetchLater("https://origin.example.com", {method: "POST", body: body_exceeding_6
 fetchLater(a_62_kb_url /* with a 3kb referrer */);
 </code></pre>
 
+ <p>In the remaining examples, each body is sized so the complete request, including its URL,
+ referrer, and headers, occupies the indicated number of kibibytes.
+
  <p>In the following sequence, the first two requests would succeed, but the third one would throw.
  That's because the overall 640 kibibytes quota was not exceeded in the first two calls, however the
  3rd request exceeds the reporting-origin quota for <code>https://a.example.com</code>, and would
  throw.
 
  <pre><code class=lang-javascript>
-fetchLater("https://a.example.com", {method: "POST", body: a_64kb_body});
-fetchLater("https://b.example.com", {method: "POST", body: a_64kb_body});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_64_kib_request_to_a});
+fetchLater("https://b.example.com", {method: "POST", body: body_for_64_kib_request_to_b});
 fetchLater("https://a.example.com");
 </code></pre>
 
@@ -7555,30 +7558,33 @@ fetchLater("https://a.example.com");
 
  <pre><code class=lang-javascript>
 // In main page
-fetchLater("https://a.example.com", {method: "POST", body: a_64kb_body});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_60_kib_request_to_a});
 
 // In same-origin nested document
-fetchLater("https://b.example.com", {method: "POST", body: a_64kb_body});
+fetchLater("https://b.example.com", {method: "POST", body: body_for_60_kib_request_to_b});
 
 // In cross-origin nested document at https://fratop.example.com
-fetchLater("https://a.example.com", {body: a_5kb_body});
-fetchLater("https://a.example.com", {body: a_12kb_body});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_5_kib_request});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_12_kib_request});
 </code></pre>
 
  <p>To make the previous example not throw, the top-level document can delegate some of its quota
- to <code>https://fratop.example.com</code>, for example by serving the following header:
+ to <code>https://fratop.example.com</code> by serving the following header and allowing the
+ feature on the cross-origin iframe:
 
  <pre><code class=lang-http>Permissions-Policy: deferred-fetch=(self "https://fratop.example.com")</code></pre>
 
- <p>Each nested document reserves its own quota. So the following would work, because each frame
- reserves 8 kibibytes:
+ <pre><code class=lang-markup>&lt;iframe src="https://fratop.example.com/" allow="deferred-fetch">&lt;/iframe></code></pre>
+
+ <p>With the default policy, each of the following cross-origin frames reserves its own 8 kibibytes,
+ so both requests would succeed:
 
  <pre><code class=lang-javascript>
 // In cross-origin nested document at https://fratop.example.com/frame-1
-fetchLater("https://a.example.com", {body: a_6kb_body});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_6_kib_request});
 
 // In cross-origin nested document at https://fratop.example.com/frame-2
-fetchLater("https://a.example.com", {body: a_6kb_body});
+fetchLater("https://a.example.com", {method: "POST", body: body_for_6_kib_request});
 </code></pre>
 
  <p>The following tree illustrates how quota is distributed to different nested documents in a tree:
